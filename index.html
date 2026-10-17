@@ -1,0 +1,1310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="description" content="Listen to a few seconds of a voice and guess which accent it is." />
+<meta name="apple-mobile-web-app-title" content="Accents" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Guess the Accent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,500..800&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" />
+<style>
+  :root {
+    color-scheme: light;
+    --ground: #edeff5;
+    --surface: #ffffff;
+    --surface-2: #e3e7f0;
+    --ink: #161a23;
+    --muted: #5a6377;
+    --line: #d2d8e4;
+    --accent: #4335d9;
+    --accent-ink: #ffffff;
+    --accent-soft: #e5e2fb;
+    --hot: #dc4726;
+    --good: #0d7a5f;
+    --good-soft: #d7efe6;
+    --bad-soft: #fae1d9;
+    --shadow-1: 0 1px 2px rgba(18, 22, 34, .06);
+    --shadow-2: 0 1px 2px rgba(18, 22, 34, .06), 0 14px 30px -18px rgba(18, 22, 34, .5);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --ground: #0f1219;
+      --surface: #181d28;
+      --surface-2: #212838;
+      --ink: #e8ebf3;
+      --muted: #9ba5ba;
+      --line: #2b3345;
+      --accent: #8f86ff;
+      --accent-ink: #10121c;
+      --accent-soft: #272253;
+      --hot: #ff7a55;
+      --good: #3fc79b;
+      --good-soft: #10332a;
+      --bad-soft: #3a201a;
+      --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+      --shadow-2: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -18px rgba(0, 0, 0, .9);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --ground: #0f1219;
+    --surface: #181d28;
+    --surface-2: #212838;
+    --ink: #e8ebf3;
+    --muted: #9ba5ba;
+    --line: #2b3345;
+    --accent: #8f86ff;
+    --accent-ink: #10121c;
+    --accent-soft: #272253;
+    --hot: #ff7a55;
+    --good: #3fc79b;
+    --good-soft: #10332a;
+    --bad-soft: #3a201a;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-2: 0 1px 2px rgba(0, 0, 0, .4), 0 14px 30px -18px rgba(0, 0, 0, .9);
+  }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", "Figtree", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  button { font: inherit; color: inherit; }
+  .mono {
+    font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+  .app {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding-inline: 16px;
+    padding-block: 18px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand h1 { font-size: 21px; }
+  .brand svg { display: block; color: var(--accent); }
+  .hud { display: flex; gap: 6px; align-items: center; }
+  .chip {
+    display: inline-flex; align-items: baseline; gap: 6px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 5px 11px; box-shadow: var(--shadow-1);
+  }
+  .chip b { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 600; }
+  .chip span { color: var(--muted); }
+  .chip.live { border-color: var(--accent); background: var(--accent-soft); }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-1);
+  }
+  .pad { padding: 20px; }
+  @media (max-width: 420px) { .pad { padding: 16px; } }
+
+  /* ---------- start screen ---------- */
+  .lede { color: var(--muted); margin: 8px 0 0; max-width: 46ch; }
+  .start h2 { font-size: clamp(28px, 8vw, 40px); line-height: 1.05; }
+  .start h2 em { font-style: normal; color: var(--accent); }
+  .setup { display: grid; gap: 16px; margin-top: 22px; }
+  .field > .mono { color: var(--muted); display: block; margin-bottom: 7px; }
+  .seg { display: flex; gap: 6px; flex-wrap: wrap; }
+  .seg button {
+    flex: 1 1 130px;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 9px 12px;
+    text-align: left;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .seg button strong { display: block; font-weight: 600; font-size: 15px; }
+  .seg button small { color: var(--muted); font-size: 12.5px; }
+  .seg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+  .seg button:hover { border-color: var(--accent); }
+
+  .btn {
+    border: 1px solid transparent; border-radius: 11px;
+    padding: 12px 18px; font-weight: 600; cursor: pointer;
+    background: var(--surface-2); transition: transform .08s ease, filter .15s ease;
+  }
+  .btn:hover { filter: brightness(1.04); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); box-shadow: var(--shadow-2); }
+  .btn-ghost { background: transparent; border-color: var(--line); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; align-items: center; }
+  .btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+  .ready-note { color: var(--muted); font-size: 13.5px; margin: 14px 0 0; }
+  .warn {
+    margin-top: 16px; padding: 14px; border-radius: 10px;
+    background: var(--bad-soft); border: 1px solid var(--hot); font-size: 14px;
+  }
+  .warn p { margin: 0 0 8px; }
+  .warn ul { margin: 0; padding-left: 18px; }
+  .warn li + li { margin-top: 4px; }
+
+  /* ---------- play screen ---------- */
+  .stage { display: grid; gap: 14px; }
+  .clip { padding: 18px 20px 20px; display: grid; gap: 14px; }
+  .clip-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .clip-head .mono { color: var(--muted); }
+  .turn-tag { color: var(--accent); font-weight: 600; }
+  canvas { display: block; width: 100%; height: 92px; max-width: 100%; }
+  .clip-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+  .clip-tools .btn { padding: 9px 14px; font-size: 14.5px; }
+  .clock { display: grid; gap: 6px; }
+  .clock-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; color: var(--muted); }
+  .clock-row b { font-variant-numeric: tabular-nums; color: var(--ink, inherit); font-size: 15px; }
+  .timebar { height: 6px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .timebar span { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: inherit; transform-origin: left; }
+  .clock[data-urgent="true"] .timebar span { background: var(--hot); }
+  .clock[data-urgent="true"] .clock-row b { color: var(--hot); }
+  .reveal .took { color: var(--muted); font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  .recap .time { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; min-width: 4.2em; text-align: right; }
+  .transcript {
+    margin: 0; padding: 11px 13px; border-radius: 10px;
+    background: var(--surface-2); color: var(--muted);
+    font-size: 15px; line-height: 1.45;
+  }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 460px) {
+    .options { grid-template-columns: 1fr; }
+    .opt .key { display: none; }
+  }
+  .opt {
+    display: flex; align-items: center; gap: 11px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 12px; padding: 13px 14px; cursor: pointer; text-align: left;
+    box-shadow: var(--shadow-1);
+    transition: border-color .15s ease, background .15s ease, transform .08s ease;
+  }
+  .opt:hover:not([disabled]) { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .flag { font-size: 26px; line-height: 1; }
+  .opt .name { font-weight: 600; font-size: 15.5px; }
+  .opt .key { margin-left: auto; color: var(--muted); }
+  .opt[data-state="right"] { background: var(--good-soft); border-color: var(--good); }
+  .opt[data-state="wrong"] { background: var(--bad-soft); border-color: var(--hot); }
+  .opt[data-state="dim"] { opacity: .5; }
+  .opt[disabled] { cursor: default; }
+
+  .reveal { display: grid; gap: 10px; border-left: 4px solid var(--line); }
+  .reveal[data-result="right"] { border-left-color: var(--good); }
+  .reveal[data-result="wrong"] { border-left-color: var(--hot); }
+  .reveal .verdict { font-size: 15px; font-weight: 600; }
+  .reveal[data-result="right"] .verdict { color: var(--good); }
+  .reveal[data-result="wrong"] .verdict { color: var(--hot); }
+  .reveal .answer { display: flex; align-items: center; gap: 10px; }
+  .reveal .answer .flag { font-size: 30px; line-height: 1; }
+  .reveal .answer h3 { font-size: 19px; }
+  .reveal .fact { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .reveal .btn-row { margin-top: 4px; }
+
+  /* ---------- end screen ---------- */
+  .final { text-align: center; display: grid; gap: 6px; }
+  .final .grade { font-family: "Bricolage Grotesque", sans-serif; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .final .tally { font-family: "Bricolage Grotesque", sans-serif; font-size: 56px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .final .tally small { font-size: 22px; color: var(--muted); font-weight: 600; }
+  .final .blurb { color: var(--muted); margin: 0; }
+  .versus { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 4px; }
+  .versus .side { background: var(--surface-2); border-radius: 12px; padding: 12px; }
+  .versus .side[data-win="true"] { background: var(--accent-soft); outline: 1px solid var(--accent); }
+  .versus .side b { display: block; font-family: "Bricolage Grotesque", sans-serif; font-size: 30px; font-variant-numeric: tabular-nums; }
+  .versus .vs { color: var(--muted); }
+  .versus .side-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .recap { list-style: none; margin: 20px 0 0; padding: 0; display: grid; gap: 4px; }
+  .recap li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; background: var(--surface-2); font-size: 14.5px; }
+  .recap .flag { font-size: 20px; }
+  .recap .mark { margin-left: auto; font-weight: 600; }
+  .recap li[data-ok="true"] .mark { color: var(--good); }
+  .recap li[data-ok="false"] .mark { color: var(--hot); }
+  .recap .miss { color: var(--muted); }
+
+  footer { color: var(--muted); font-size: 12.5px; text-align: center; }
+  footer a { color: inherit; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="9" cy="12" r="7" stroke="currentColor" stroke-width="1.7" fill="none"/>
+        <path d="M9 5c2.2 2.1 2.2 11.9 0 14M2.4 9.6h13.2M2.4 14.4h13.2" stroke="currentColor" stroke-width="1.3" fill="none"/>
+        <path d="M18.4 8.4c1.9 2 1.9 5.2 0 7.2M21.2 6.2c3 3.2 3 8.4 0 11.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/>
+      </svg>
+      <h1>Guess the Accent</h1>
+    </div>
+    <div class="hud" id="hud" hidden>
+      <span class="chip"><span class="mono">Round</span><b id="hudRound">1/10</b></span>
+      <span class="chip" id="hudScoreChip"><span class="mono">Score</span><b id="hudScore">0</b></span>
+      <span class="chip" id="hudStreakChip" hidden><span class="mono">Streak</span><b id="hudStreak">0</b></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ============ START ============ -->
+    <section class="card pad start" id="screenStart">
+      <h2>Somebody is talking. <em>Where are they from?</em></h2>
+      <p class="lede" id="lede">You get a few seconds of a voice — one sentence, no clues. Pick the accent it came from. Your device's own speech voices do the talking, so every device has a slightly different cast.</p>
+
+      <div class="setup">
+        <div class="field">
+          <span class="mono">Voices</span>
+          <div class="seg" id="engineSeg" role="group" aria-label="Voices">
+            <button type="button" data-engine="device" aria-pressed="true">
+              <strong>This device</strong>
+              <small>Built-in speech voices</small>
+            </button>
+            <button type="button" data-engine="chatterbox" aria-pressed="false">
+              <strong>Chatterbox</strong>
+              <small id="engineChatterboxNote">AI voices from real speakers</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="mono">Sound pack</span>
+          <div class="seg" id="modeSeg" role="group" aria-label="Sound pack">
+            <button type="button" data-mode="english" aria-pressed="true">
+              <strong>English accents</strong>
+              <small id="modeEnglishCount">checking…</small>
+            </button>
+            <button type="button" data-mode="world" aria-pressed="false">
+              <strong>World tour</strong>
+              <small id="modeWorldCount">checking…</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="mono">Difficulty</span>
+          <div class="seg" id="diffSeg" role="group" aria-label="Difficulty">
+            <button type="button" data-diff="easy" aria-pressed="true">
+              <strong>Easy</strong>
+              <small>Choices from far-apart places</small>
+            </button>
+            <button type="button" data-diff="tricky" aria-pressed="false">
+              <strong>Tricky</strong>
+              <small>Neighbours that sound alike</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="mono">Timer</span>
+          <div class="seg" id="timerSeg" role="group" aria-label="Timer">
+            <button type="button" data-timer="on" aria-pressed="true">
+              <strong>15 seconds</strong>
+              <small>Clock starts when the clip ends</small>
+            </button>
+            <button type="button" data-timer="off" aria-pressed="false">
+              <strong>No limit</strong>
+              <small>Take your time — answers are still timed</small>
+            </button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="mono">Players</span>
+          <div class="seg" id="playersSeg" role="group" aria-label="Players">
+            <button type="button" data-players="1" aria-pressed="true">
+              <strong>Just me</strong>
+              <small>10 clips, one ear</small>
+            </button>
+            <button type="button" data-players="2" aria-pressed="false">
+              <strong>Two players</strong>
+              <small>Take turns, 5 clips each</small>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="startBtn">Start listening</button>
+        <span class="chip" id="bestChip" hidden><span class="mono">Best</span><b id="bestScore">0</b></span>
+      </div>
+
+      <p class="ready-note" id="readyNote">Looking for voices on this device…</p>
+      <div class="warn" id="setupWarn" hidden></div>
+    </section>
+
+    <!-- ============ PLAY ============ -->
+    <section class="stage" id="screenPlay" hidden>
+      <div class="card clip">
+        <div class="clip-head">
+          <span class="mono" id="clipLabel">Clip 1 of 10</span>
+          <span class="turn-tag" id="turnTag" hidden>Player 1</span>
+        </div>
+        <canvas id="wave" aria-hidden="true"></canvas>
+        <div class="clock" id="clock" hidden>
+          <div class="clock-row"><span id="clockLabel">Listen first — the clock starts when the clip ends</span><b id="clockLeft">15s</b></div>
+          <div class="timebar" aria-hidden="true"><span id="timebarFill"></span></div>
+        </div>
+        <div class="clip-tools">
+          <button type="button" class="btn btn-primary" id="playBtn">Play the clip</button>
+          <button type="button" class="btn btn-ghost" id="slowBtn">Slow it down</button>
+          <button type="button" class="btn btn-ghost" id="wordsBtn" aria-expanded="false">Show the words</button>
+        </div>
+        <p class="transcript" id="transcript" hidden></p>
+      </div>
+
+      <div class="options" id="options"></div>
+
+      <div class="card pad reveal" id="reveal" hidden>
+        <span class="verdict" id="verdict"></span>
+        <span class="took" id="took"></span>
+        <div class="answer">
+          <span class="flag" id="revealFlag"></span>
+          <h3 id="revealName"></h3>
+        </div>
+        <p class="fact" id="revealFact"></p>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="nextBtn">Next clip</button>
+          <button type="button" class="btn btn-ghost" id="hearAgainBtn">Hear it again</button>
+        </div>
+      </div>
+
+      <p class="ready-note" id="playHint">Keys: 1–4 to answer · R to replay · Enter for the next clip.</p>
+    </section>
+
+    <!-- ============ END ============ -->
+    <section class="card pad" id="screenEnd" hidden>
+      <div class="final">
+        <span class="grade" id="grade"></span>
+        <div class="tally" id="finalTally"></div>
+        <p class="blurb" id="finalBlurb"></p>
+      </div>
+      <div class="versus" id="versus" hidden>
+        <div class="side" id="sideA"><span class="mono">Player 1</span><b id="scoreA">0</b><small class="side-time" id="timeA"></small></div>
+        <span class="vs mono">vs</span>
+        <div class="side" id="sideB"><span class="mono">Player 2</span><b id="scoreB">0</b><small class="side-time" id="timeB"></small></div>
+      </div>
+      <ul class="recap" id="recap"></ul>
+      <div class="btn-row">
+        <button type="button" class="btn btn-primary" id="againBtn">Play again</button>
+        <button type="button" class="btn btn-ghost" id="settingsBtn">Change settings</button>
+      </div>
+    </section>
+  </main>
+
+  <footer id="footNote">Voices come from your browser's speech engine — nothing is recorded, and no audio is sent anywhere.</footer>
+  <p class="sr" id="live" role="status" aria-live="polite"></p>
+</div>
+
+<!-- Pre-rendered clip packs (tools/voicegen). Missing file = device voices only. -->
+<script src="audio/chatterbox/manifest.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  /* ------------------------------------------------------------------
+   * Accent catalogue. Keys are BCP-47 tags we ask the speech engine for.
+   * cluster = who this accent is easy to confuse with (used by Tricky mode).
+   * ---------------------------------------------------------------- */
+  var ACCENTS = [
+    // --- English pack ---
+    { tag: "en-GB", pack: "english", flag: "🇬🇧", name: "British (England)", cluster: "isles",
+      fact: "Most of England is non-rhotic: the r in car and farmer just melts away." },
+    { tag: "en-IE", pack: "english", flag: "🇮🇪", name: "Irish", cluster: "isles",
+      fact: "Irish English often softens th, so think edges toward tink." },
+    { tag: "en-US", pack: "english", flag: "🇺🇸", name: "American", cluster: "namerica",
+      fact: "General American keeps every r: car, farmer and water all hang on to it." },
+    { tag: "en-CA", pack: "english", flag: "🇨🇦", name: "Canadian", cluster: "namerica",
+      fact: "Listen to about and house — that lifted vowel is called Canadian raising." },
+    { tag: "en-AU", pack: "english", flag: "🇦🇺", name: "Australian", cluster: "oceania",
+      fact: "Australians shorten everything they can: afternoon becomes arvo, breakfast becomes brekkie." },
+    { tag: "en-NZ", pack: "english", flag: "🇳🇿", name: "New Zealander", cluster: "oceania",
+      fact: "Kiwi i slides toward u, which is why fish and chips sounds like fush and chups." },
+    { tag: "en-IN", pack: "english", flag: "🇮🇳", name: "Indian", cluster: "sasia",
+      fact: "Indian English gives t and d a retroflex touch — the tongue curls back a little." },
+    { tag: "en-PK", pack: "english", flag: "🇵🇰", name: "Pakistani", cluster: "sasia",
+      fact: "Urdu's rhythm comes through: syllables land in an even, steady beat." },
+    { tag: "en-LK", pack: "english", flag: "🇱🇰", name: "Sri Lankan", cluster: "sasia",
+      fact: "Sri Lankan English keeps vowels long and pure, closer to how they look written." },
+    { tag: "en-ZA", pack: "english", flag: "🇿🇦", name: "South African", cluster: "africa",
+      fact: "The short i gets clipped flat, so sit drifts toward sut." },
+    { tag: "en-NG", pack: "english", flag: "🇳🇬", name: "Nigerian", cluster: "africa",
+      fact: "Nigeria has more English speakers than the UK, with crisp, evenly stressed vowels." },
+    { tag: "en-KE", pack: "english", flag: "🇰🇪", name: "Kenyan", cluster: "africa",
+      fact: "Sitting next to Swahili gives Kenyan English an even, syllable-by-syllable pulse." },
+    { tag: "en-GH", pack: "english", flag: "🇬🇭", name: "Ghanaian", cluster: "africa",
+      fact: "Ghanaian English holds vowels full and round instead of reducing them to uh." },
+    { tag: "en-EG", pack: "english", flag: "🇪🇬", name: "Egyptian", cluster: "africa",
+      fact: "Arabic has no p sound, so Egyptian English often blurs p into b — a bottle of bebsi." },
+    { tag: "en-SG", pack: "english", flag: "🇸🇬", name: "Singaporean", cluster: "sea",
+      fact: "In relaxed Singlish, sentences often end with a friendly lah." },
+    { tag: "en-PH", pack: "english", flag: "🇵🇭", name: "Filipino", cluster: "sea",
+      fact: "Filipino English keeps vowels clean and often puts the stress on a different syllable." },
+    { tag: "en-HK", pack: "english", flag: "🇭🇰", name: "Hong Konger", cluster: "sea",
+      fact: "Cantonese endings cut syllables off sharply, giving the accent a clipped edge." },
+    { tag: "en-MY", pack: "english", flag: "🇲🇾", name: "Malaysian", cluster: "sea",
+      fact: "Malaysian English trims final consonant clusters — first can land as firs." },
+
+    // --- World tour pack ---
+    { tag: "fr-FR", pack: "world", flag: "🇫🇷", name: "French (France)", cluster: "french",
+      fact: "That r is made at the back of the throat, near where you gargle." },
+    { tag: "fr-CA", pack: "world", flag: "🇨🇦", name: "French (Québec)", cluster: "french",
+      fact: "Québec French kept older vowel sounds that Paris let go of centuries ago." },
+    { tag: "es-ES", pack: "world", flag: "🇪🇸", name: "Spanish (Spain)", cluster: "spanish",
+      fact: "In most of Spain, c before e or i is a th sound — gracias becomes grathias." },
+    { tag: "es-MX", pack: "world", flag: "🇲🇽", name: "Spanish (Mexico)", cluster: "spanish",
+      fact: "Mexico is the largest Spanish-speaking country, and its s stays a clean s." },
+    { tag: "es-AR", pack: "world", flag: "🇦🇷", name: "Spanish (Argentina)", cluster: "spanish",
+      fact: "Argentines turn ll and y into a sh sound: calle becomes cashe." },
+    { tag: "pt-BR", pack: "world", flag: "🇧🇷", name: "Portuguese (Brazil)", cluster: "portuguese",
+      fact: "Brazilian Portuguese is wide open and musical, with de often sounding like jee." },
+    { tag: "pt-PT", pack: "world", flag: "🇵🇹", name: "Portuguese (Portugal)", cluster: "portuguese",
+      fact: "European Portuguese swallows unstressed vowels, so words sound tightly packed." },
+    { tag: "de-DE", pack: "world", flag: "🇩🇪", name: "German (Germany)", cluster: "german",
+      fact: "German happily glues nouns together into one very long word." },
+    { tag: "de-AT", pack: "world", flag: "🇦🇹", name: "German (Austria)", cluster: "german",
+      fact: "Austrian German sounds softer and more sing-song than the northern kind." },
+    { tag: "de-CH", pack: "world", flag: "🇨🇭", name: "Swiss German", cluster: "german",
+      fact: "Swiss German has a throaty ch that German speakers elsewhere find hard to copy." },
+    { tag: "it-IT", pack: "world", flag: "🇮🇹", name: "Italian", cluster: "romance",
+      fact: "Nearly every Italian word ends on a vowel, which is why it sounds so bouncy." },
+    { tag: "ro-RO", pack: "world", flag: "🇷🇴", name: "Romanian", cluster: "romance",
+      fact: "Romanian is a Latin language surrounded by Slavic ones — it borrowed from both." },
+    { tag: "nl-NL", pack: "world", flag: "🇳🇱", name: "Dutch", cluster: "germanic",
+      fact: "The Dutch g is a scrape at the back of the throat, and it is famously hard to fake." },
+    { tag: "af-ZA", pack: "world", flag: "🇿🇦", name: "Afrikaans", cluster: "germanic",
+      fact: "Afrikaans grew out of Dutch and is now its own language, spoken in South Africa." },
+    { tag: "sv-SE", pack: "world", flag: "🇸🇪", name: "Swedish", cluster: "nordic",
+      fact: "Swedish has two tones, so the same spelling can mean two things depending on pitch." },
+    { tag: "da-DK", pack: "world", flag: "🇩🇰", name: "Danish", cluster: "nordic",
+      fact: "Danish softens consonants so much that even Norwegians say it sounds blurred." },
+    { tag: "nb-NO", pack: "world", flag: "🇳🇴", name: "Norwegian", cluster: "nordic",
+      fact: "Norwegian rises and falls like a little melody as it goes." },
+    { tag: "fi-FI", pack: "world", flag: "🇫🇮", name: "Finnish", cluster: "nordic",
+      fact: "Finnish is not related to Swedish at all — the stress always lands on the first syllable." },
+    { tag: "pl-PL", pack: "world", flag: "🇵🇱", name: "Polish", cluster: "slavic",
+      fact: "Polish loves consonant clusters, and the stress sits on the second-to-last syllable." },
+    { tag: "cs-CZ", pack: "world", flag: "🇨🇿", name: "Czech", cluster: "slavic",
+      fact: "Czech has a sound, ř, that exists in almost no other language." },
+    { tag: "ru-RU", pack: "world", flag: "🇷🇺", name: "Russian", cluster: "slavic",
+      fact: "Russian consonants come in hard and soft pairs, which gives the language its shape." },
+    { tag: "uk-UA", pack: "world", flag: "🇺🇦", name: "Ukrainian", cluster: "slavic",
+      fact: "Ukrainian sounds more open than Russian, with a breathy h where Russian uses g." },
+    { tag: "el-GR", pack: "world", flag: "🇬🇷", name: "Greek", cluster: "slavic",
+      fact: "Greek has been written down for over 3,000 years — longer than any other living European language." },
+    { tag: "tr-TR", pack: "world", flag: "🇹🇷", name: "Turkish", cluster: "wasia",
+      fact: "Turkish stacks endings onto a word until a whole sentence fits inside one." },
+    { tag: "ar-SA", pack: "world", flag: "🇸🇦", name: "Arabic (Gulf)", cluster: "wasia",
+      fact: "Arabic has sounds made deep in the throat that most languages never use." },
+    { tag: "ar-EG", pack: "world", flag: "🇪🇬", name: "Arabic (Egypt)", cluster: "wasia",
+      fact: "Egyptian Arabic turns j into a hard g, and films made it the dialect everyone knows." },
+    { tag: "he-IL", pack: "world", flag: "🇮🇱", name: "Hebrew", cluster: "wasia",
+      fact: "Hebrew went from a written-only language to an everyday spoken one just over a century ago." },
+    { tag: "fa-IR", pack: "world", flag: "🇮🇷", name: "Persian", cluster: "wasia",
+      fact: "Persian uses Arabic letters but is a completely different family of language." },
+    { tag: "hi-IN", pack: "world", flag: "🇮🇳", name: "Hindi", cluster: "sasia",
+      fact: "Hindi tells apart puffed and unpuffed consonants — hold a hand to your mouth and feel it." },
+    { tag: "ta-IN", pack: "world", flag: "🇮🇳", name: "Tamil", cluster: "sasia",
+      fact: "Tamil is one of the oldest languages still spoken today, with literature over 2,000 years old." },
+    { tag: "zh-CN", pack: "world", flag: "🇨🇳", name: "Mandarin (China)", cluster: "easia",
+      fact: "Mandarin is a tone language: the same syllable means four different things at four pitches." },
+    { tag: "zh-TW", pack: "world", flag: "🇹🇼", name: "Mandarin (Taiwan)", cluster: "easia",
+      fact: "Taiwan writes with traditional characters and speaks with a gentler, less curled r." },
+    { tag: "zh-HK", pack: "world", flag: "🇭🇰", name: "Cantonese", cluster: "easia",
+      fact: "Cantonese has six tones to Mandarin's four, so it sounds even more melodic." },
+    { tag: "ja-JP", pack: "world", flag: "🇯🇵", name: "Japanese", cluster: "easia",
+      fact: "Japanese runs on even beats, which is why it sounds so steady and regular." },
+    { tag: "ko-KR", pack: "world", flag: "🇰🇷", name: "Korean", cluster: "easia",
+      fact: "Korean's alphabet was invented on purpose in 1443 so that everyone could learn to read." },
+    { tag: "th-TH", pack: "world", flag: "🇹🇭", name: "Thai", cluster: "sea",
+      fact: "Thai has five tones, and its writing runs on with no spaces between words." },
+    { tag: "vi-VN", pack: "world", flag: "🇻🇳", name: "Vietnamese", cluster: "sea",
+      fact: "Vietnamese has six tones and is written with Latin letters plus a stack of marks." },
+    { tag: "id-ID", pack: "world", flag: "🇮🇩", name: "Indonesian", cluster: "sea",
+      fact: "Indonesian has no verb tenses — you add a word for when instead." },
+    { tag: "ms-MY", pack: "world", flag: "🇲🇾", name: "Malay", cluster: "sea",
+      fact: "To make a plural in Malay you simply say the word twice." },
+    { tag: "sw-KE", pack: "world", flag: "🇰🇪", name: "Swahili", cluster: "africa",
+      fact: "Swahili is the shared language of East Africa, and the stress lands second-to-last every time." }
+  ];
+
+  /* English sentences chosen because they make accents show themselves:
+     r-dropping, the a in bath, the i in fish, t between vowels. */
+  var EN_PHRASES = [
+    "The rain in Spain falls mainly on the plain.",
+    "I would love a glass of water and a bit of butter, please.",
+    "Park the car in the garden and let us go for a walk.",
+    "Thirty-three thirsty birds were sitting on the tower.",
+    "Can you tell me the fastest way to the dance hall?",
+    "My brother bought a bottle of tomato sauce on Tuesday.",
+    "Oh no, the phone is out of battery again!",
+    "We went down to the river and caught three little fish.",
+    "That is absolutely brilliant, but where are the keys?",
+    "Her daughter draws dinosaurs on every single wall.",
+    "Ask the girl in the red shirt about the early bus.",
+    "It is not about the answer, it is about how you say it."
+  ];
+
+  /* One simple line per language for the world tour. */
+  var WORLD_PHRASES = {
+    fr: "Bonjour ! Comment ça va aujourd'hui ?",
+    es: "¡Hola! ¿Cómo estás hoy?",
+    pt: "Olá! Tudo bem com você hoje?",
+    de: "Guten Tag! Wie geht es dir heute?",
+    it: "Ciao! Come stai oggi?",
+    ro: "Bună! Ce mai faci astăzi?",
+    nl: "Hallo! Hoe gaat het vandaag met je?",
+    af: "Hallo! Hoe gaan dit vandag met jou?",
+    sv: "Hej! Hur mår du idag?",
+    da: "Hej! Hvordan har du det i dag?",
+    nb: "Hei! Hvordan går det med deg i dag?",
+    fi: "Hei! Mitä kuuluu tänään?",
+    pl: "Cześć! Jak się dzisiaj masz?",
+    cs: "Ahoj! Jak se dnes máš?",
+    ru: "Привет! Как у тебя сегодня дела?",
+    uk: "Привіт! Як твої справи сьогодні?",
+    el: "Γεια σου! Τι κάνεις σήμερα;",
+    tr: "Merhaba! Bugün nasılsın?",
+    ar: "مرحبا! كيف حالك اليوم؟",
+    he: "שלום! מה שלומך היום?",
+    fa: "سلام! امروز حالت چطور است؟",
+    hi: "नमस्ते! आज आप कैसे हैं?",
+    ta: "வணக்கம்! இன்று எப்படி இருக்கிறீர்கள்?",
+    zh: "你好！今天过得怎么样？",
+    ja: "こんにちは！今日はお元気ですか？",
+    ko: "안녕하세요! 오늘 기분이 어때요?",
+    th: "สวัสดีครับ! วันนี้เป็นอย่างไรบ้าง",
+    vi: "Xin chào! Hôm nay bạn thế nào?",
+    id: "Halo! Apa kabar hari ini?",
+    ms: "Helo! Apa khabar hari ini?",
+    sw: "Jambo! Habari za leo?"
+  };
+  var PHRASE_OVERRIDES = {
+    "zh-TW": "你好！今天過得怎麼樣？",
+    "zh-HK": "你好！今日過得點呀？"
+  };
+
+  /* Some speech engines (notably Android) report three-letter codes. */
+  var LANG3 = {
+    eng: "en", fra: "fr", fre: "fr", spa: "es", deu: "de", ger: "de", ita: "it", por: "pt",
+    nld: "nl", dut: "nl", afr: "af", swe: "sv", dan: "da", nor: "nb", nob: "nb", fin: "fi",
+    pol: "pl", ces: "cs", cze: "cs", rus: "ru", ukr: "uk", ell: "el", gre: "el", ron: "ro",
+    rum: "ro", hun: "hu", tur: "tr", ara: "ar", heb: "he", fas: "fa", per: "fa", hin: "hi",
+    tam: "ta", zho: "zh", chi: "zh", cmn: "zh", yue: "zh", jpn: "ja", kor: "ko", tha: "th",
+    vie: "vi", ind: "id", msa: "ms", may: "ms", swa: "sw"
+  };
+  var REGION3 = {
+    GBR: "GB", USA: "US", AUS: "AU", IND: "IN", IRL: "IE", CAN: "CA", NZL: "NZ", ZAF: "ZA",
+    SGP: "SG", PHL: "PH", NGA: "NG", KEN: "KE", GHA: "GH", HKG: "HK", MYS: "MY", PAK: "PK",
+    LKA: "LK", FRA: "FR", ESP: "ES", MEX: "MX", ARG: "AR", BRA: "BR", PRT: "PT", DEU: "DE",
+    AUT: "AT", CHE: "CH", ITA: "IT", NLD: "NL", BEL: "BE", SWE: "SE", DNK: "DK", NOR: "NO",
+    FIN: "FI", POL: "PL", CZE: "CZ", RUS: "RU", UKR: "UA", GRC: "GR", ROU: "RO", TUR: "TR",
+    SAU: "SA", EGY: "EG", ISR: "IL", IRN: "IR", CHN: "CN", TWN: "TW", JPN: "JP", KOR: "KR",
+    THA: "TH", VNM: "VN", IDN: "ID", TZA: "TZ"
+  };
+
+  function normalizeTag(raw) {
+    if (!raw) return "";
+    var bits = String(raw).replace(/_/g, "-").split("-");
+    var lang = (bits[0] || "").toLowerCase();
+    if (lang.length === 3 && LANG3[lang]) lang = LANG3[lang];
+    var region = "";
+    for (var i = 1; i < bits.length; i++) {
+      var b = bits[i];
+      if (/^[A-Za-z]{2}$/.test(b) || /^[A-Za-z]{3}$/.test(b) || /^\d{3}$/.test(b)) {
+        region = b.toUpperCase();
+        if (REGION3[region]) region = REGION3[region];
+        if (region.length === 2) break;
+      }
+    }
+    return region ? lang + "-" + region : lang;
+  }
+
+  /* ---------------- tiny helpers ---------------- */
+  function el(id) { return document.getElementById(id); }
+  function shuffle(a) {
+    var out = a.slice();
+    for (var i = out.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = out[i]; out[i] = out[j]; out[j] = t;
+    }
+    return out;
+  }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function store(key, val) {
+    try {
+      if (val === undefined) {
+        var raw = localStorage.getItem("gta:" + key);
+        return raw == null ? null : JSON.parse(raw);
+      }
+      localStorage.setItem("gta:" + key, JSON.stringify(val));
+    } catch (e) { /* private window, blocked storage — the game still works */ }
+    return null;
+  }
+  function say(msg) { el("live").textContent = msg; }
+
+  /* ---------------- speech ---------------- */
+  var SUPPORTED = typeof window.speechSynthesis !== "undefined" &&
+                  typeof window.SpeechSynthesisUtterance !== "undefined";
+  var voicesByTag = {};   // "en-GB" -> [voice, voice]
+  var packs = { english: [], world: [] };
+  var currentUtterance = null;
+
+  function collectVoices() {
+    var voices = [];
+    try { voices = window.speechSynthesis.getVoices() || []; } catch (e) { voices = []; }
+    voicesByTag = {};
+    voices.forEach(function (v) {
+      var tag = normalizeTag(v.lang);
+      if (!tag) return;
+      (voicesByTag[tag] = voicesByTag[tag] || []).push(v);
+    });
+    packs.english = ACCENTS.filter(function (a) { return a.pack === "english" && voicesByTag[a.tag]; });
+    packs.world = ACCENTS.filter(function (a) { return a.pack === "world" && voicesByTag[a.tag]; });
+    return voices.length;
+  }
+
+  function waitForVoices() {
+    return new Promise(function (resolve) {
+      if (!SUPPORTED) return resolve(0);
+      var settled = false;
+      function done() { if (!settled) { settled = true; resolve(collectVoices()); } }
+      try {
+        window.speechSynthesis.onvoiceschanged = function () {
+          if (collectVoices() > 0) done();
+        };
+      } catch (e) { /* not every engine fires this */ }
+      var tries = 0;
+      (function poll() {
+        if (settled) return;
+        if (collectVoices() > 0 || tries++ > 24) return done();
+        setTimeout(poll, 130);
+      })();
+    });
+  }
+
+  function phraseFor(accent) {
+    if (accent.pack === "english") return pick(EN_PHRASES);
+    if (PHRASE_OVERRIDES[accent.tag]) return PHRASE_OVERRIDES[accent.tag];
+    return WORLD_PHRASES[accent.tag.split("-")[0]] || pick(EN_PHRASES);
+  }
+
+  /* Recorded clips, keyed by engine then accent tag: { src, phrase } where phrase indexes EN_PHRASES. */
+  var CLIPS = window.CLIP_PACKS || {};
+  var clipAudio = null;
+
+  function stopSound() {
+    try { window.speechSynthesis.cancel(); } catch (e) { /* ignore */ }
+    if (clipAudio) { clipAudio.pause(); clipAudio = null; }
+  }
+
+  function playClip(r, rate) {
+    var a = new Audio(r.clip.src);
+    a.playbackRate = rate ? rate / r.rate : 1;   // slow-down is relative to the normal rate
+    a.preservesPitch = true;
+    a.onplaying = function () { setPlaying(true); clipStarted(r); };
+    a.onended = function () { setPlaying(false); clipEnded(r); };
+    a.onerror = function () {
+      setPlaying(false);
+      el("playHint").textContent = "That clip would not load. Tap “Play the clip” to try again.";
+    };
+    clipAudio = a;
+    var p = a.play();
+    if (p && p.catch) p.catch(function () { setPlaying(false); });
+  }
+
+  function speak(rate) {
+    if (!state.round) return;
+    var r = state.round;
+    stopSound();
+    if (r.clip) return playClip(r, rate);
+    if (!SUPPORTED) return;
+    setTimeout(function () {
+      var u = new SpeechSynthesisUtterance(r.phrase);
+      u.voice = r.voice;
+      u.lang = r.voice && r.voice.lang ? r.voice.lang : r.accent.tag;
+      u.rate = rate || r.rate;
+      u.pitch = r.pitch;
+      u.onstart = function () { setPlaying(true); clipStarted(r); };
+      u.onend = function () { setPlaying(false); clipEnded(r); };
+      u.onerror = function () {
+        setPlaying(false);
+        el("playHint").textContent = "That clip would not play. Tap “Play the clip” to try again.";
+      };
+      currentUtterance = u; // keep a reference so it is not collected mid-sentence
+      try { window.speechSynthesis.speak(u); } catch (e) { setPlaying(false); }
+    }, 70);
+  }
+
+  /* ---------------- answer clock ----------------
+     Answer time runs from the first moment the clip is heard. With the timer on,
+     the countdown starts only once the clip has finished its first play, so a long
+     sentence never eats into thinking time. Replays and slow-downs cost time. */
+  var TIME_LIMIT = 15;
+  var clockId = 0;
+
+  function now() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function fmtSecs(ms) { return (ms / 1000).toFixed(1) + "s"; }
+  function fmtTotal(ms) {
+    var s = Math.round(ms / 1000);
+    return s < 60 ? s + "s" : Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+
+  function clipStarted(r) {
+    if (r === state.round && !r.heardAt) r.heardAt = now();
+  }
+  function clipEnded(r) {
+    if (r !== state.round || state.answered || r.deadline || state.timer !== "on") return;
+    r.deadline = now() + TIME_LIMIT * 1000;
+    el("clockLabel").textContent = "Time to answer";
+    tickClock();
+  }
+  function stopClock() {
+    if (clockId) { clearTimeout(clockId); clockId = 0; }
+  }
+  function resetClock() {
+    stopClock();
+    var c = el("clock");
+    c.hidden = state.timer !== "on";
+    c.dataset.urgent = "false";
+    el("clockLabel").textContent = "Listen first — the clock starts when the clip ends";
+    el("clockLeft").textContent = TIME_LIMIT + "s";
+    el("timebarFill").style.transform = "scaleX(1)";
+  }
+  function tickClock() {
+    var r = state.round;
+    if (!r || state.answered || !r.deadline) return;
+    var left = Math.max(0, r.deadline - now());
+    var secs = Math.ceil(left / 1000);
+    el("clockLeft").textContent = secs + "s";
+    el("timebarFill").style.transform = "scaleX(" + (left / (TIME_LIMIT * 1000)) + ")";
+    var urgent = left <= 5000;
+    if (urgent && el("clock").dataset.urgent !== "true") say("5 seconds left.");
+    el("clock").dataset.urgent = String(urgent);
+    if (left <= 0) return answer(null, null);
+    clockId = setTimeout(tickClock, 100);
+  }
+
+  /* ---------------- waveform ---------------- */
+  var canvas = el("wave"), ctx = canvas.getContext("2d");
+  var BARS = 56;
+  var bars = new Array(BARS), targets = new Array(BARS);
+  var playing = false, rafId = 0, tick = 0, grad = null;
+  var reduceMotion = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : { matches: false };
+  function restingHeight(i) { return 0.05 + Math.sin((Math.PI * i) / (BARS - 1)) * 0.12; }
+  for (var b = 0; b < BARS; b++) { bars[b] = restingHeight(b); targets[b] = bars[b]; }
+
+  function themeColor(name, fallback) {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
+  function buildGradient(w) {
+    grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, themeColor("--accent", "#4335d9"));
+    grad.addColorStop(1, themeColor("--hot", "#dc4726"));
+  }
+  function sizeCanvas() {
+    var rect = canvas.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.max(1, Math.round(rect.width * dpr));
+    canvas.height = Math.max(1, Math.round(rect.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    buildGradient(rect.width);
+    drawWave();
+  }
+  function drawWave() {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    ctx.clearRect(0, 0, w, h);
+    var gap = 3;
+    var bw = Math.max(2, (w - gap * (BARS - 1)) / BARS);
+    var idle = themeColor("--surface-2", "#e3e7f0");
+    ctx.fillStyle = playing ? grad : idle;
+    for (var i = 0; i < BARS; i++) {
+      var bh = Math.max(3, bars[i] * h);
+      var x = i * (bw + gap);
+      var y = (h - bh) / 2;
+      var r = Math.min(bw / 2, 3);
+      ctx.beginPath();
+      if (ctx.roundRect) { ctx.roundRect(x, y, bw, bh, r); }
+      else { ctx.rect(x, y, bw, bh); }
+      ctx.fill();
+    }
+  }
+  function animate() {
+    tick += 0.09;
+    for (var i = 0; i < BARS; i++) {
+      var envelope = Math.sin((Math.PI * i) / (BARS - 1));
+      var wobble = Math.abs(Math.sin(tick * 1.6 + i * 0.42)) * 0.6 + Math.random() * 0.4;
+      targets[i] = 0.08 + envelope * wobble * 0.85;
+      bars[i] += (targets[i] - bars[i]) * 0.35;
+    }
+    drawWave();
+    rafId = requestAnimationFrame(animate);
+  }
+  function setPlaying(on) {
+    playing = on;
+    el("playBtn").textContent = on ? "Playing…" : "Play the clip";
+    if (on) {
+      if (reduceMotion.matches) {
+        for (var i = 0; i < BARS; i++) bars[i] = 0.1 + Math.sin((Math.PI * i) / (BARS - 1)) * 0.55;
+        drawWave();
+      } else if (!rafId) { rafId = requestAnimationFrame(animate); }
+    } else {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+      for (var j = 0; j < BARS; j++) bars[j] = restingHeight(j);
+      drawWave();
+    }
+  }
+  if (window.ResizeObserver) { new ResizeObserver(sizeCanvas).observe(canvas); }
+  else { window.addEventListener("resize", sizeCanvas); }
+  if (reduceMotion.addEventListener) {
+    reduceMotion.addEventListener("change", function () { setPlaying(playing); });
+  }
+  var themeWatch = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  if (themeWatch && themeWatch.addEventListener) {
+    themeWatch.addEventListener("change", function () { sizeCanvas(); });
+  }
+  new MutationObserver(function () { sizeCanvas(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  /* ---------------- game state ---------------- */
+  var ROUNDS = 10;
+  var state = {
+    // Phones often ship with few speech voices, so first-time players get the recorded pack.
+    engine: store("engine") || (CLIPS.chatterbox ? "chatterbox" : "device"),
+    timer: store("timer") || "on",
+    times: [0, 0],          // total answer time per player, ms
+    mode: store("mode") || "english",
+    diff: store("diff") || "easy",
+    players: store("players") || 1,
+    roundNo: 0,
+    scores: [0, 0],
+    streak: 0,
+    bestStreak: 0,
+    used: [],
+    history: [],
+    round: null,
+    answered: false
+  };
+
+  function poolFor(engine, mode) {
+    if (engine === "device") return packs[mode];
+    var clips = CLIPS[engine] || {};
+    return ACCENTS.filter(function (a) { return a.pack === mode && clips[a.tag] && clips[a.tag].length; });
+  }
+  function pool() { return poolFor(state.engine, state.mode); }
+
+  function nextAccent() {
+    var p = pool();
+    var fresh = p.filter(function (a) { return state.used.indexOf(a.tag) === -1; });
+    if (!fresh.length) { state.used = []; fresh = p; }
+    var a = pick(fresh);
+    state.used.push(a.tag);
+    return a;
+  }
+
+  function distractorsFor(answer) {
+    var p = pool().filter(function (a) { return a.tag !== answer.tag; });
+    var near = p.filter(function (a) { return a.cluster === answer.cluster; });
+    var far = p.filter(function (a) { return a.cluster !== answer.cluster; });
+    if (state.diff === "tricky") {
+      // Tricky: fill up with the neighbours first — the ones that really do sound alike.
+      return shuffle(near).concat(shuffle(far)).slice(0, 3);
+    }
+    // Easy: spread the wrong answers across different corners of the world.
+    var seen = {};
+    seen[answer.cluster] = true;
+    var spread = [];
+    var rest = [];
+    shuffle(far).forEach(function (a) {
+      if (seen[a.cluster]) { rest.push(a); return; }
+      seen[a.cluster] = true;
+      spread.push(a);
+    });
+    return spread.concat(rest, shuffle(near)).slice(0, 3);
+  }
+
+  function buildRound() {
+    var accent = nextAccent();
+    var voices = voicesByTag[accent.tag] || [];
+    var clip = state.engine === "device" ? null : pick(CLIPS[state.engine][accent.tag]);
+    state.round = {
+      accent: accent,
+      clip: clip,
+      voice: clip ? null : pick(voices),
+      phrase: clip ? EN_PHRASES[clip.phrase] : phraseFor(accent),
+      rate: clip ? 1 : 0.92 + Math.random() * 0.16,
+      pitch: 0.92 + Math.random() * 0.2,
+      options: shuffle([accent].concat(distractorsFor(accent)))
+    };
+    state.answered = false;
+  }
+
+  /* ---------------- rendering ---------------- */
+  function show(id) {
+    ["screenStart", "screenPlay", "screenEnd"].forEach(function (s) { el(s).hidden = (s !== id); });
+    el("hud").hidden = (id !== "screenPlay");
+  }
+
+  function totalScore() { return state.scores[0] + state.scores[1]; }
+  function currentPlayer() { return state.players === 2 ? (state.roundNo % 2 === 1 ? 0 : 1) : 0; }
+
+  function renderHud() {
+    el("hudRound").textContent = state.roundNo + "/" + ROUNDS;
+    if (state.players === 2) {
+      el("hudScore").textContent = state.scores[0] + " – " + state.scores[1];
+      el("hudScoreChip").firstElementChild.textContent = "P1 – P2";
+      el("hudStreakChip").hidden = true;
+    } else {
+      el("hudScore").textContent = String(state.scores[0]);
+      el("hudScoreChip").firstElementChild.textContent = "Score";
+      el("hudStreakChip").hidden = state.streak < 2;
+      el("hudStreak").textContent = state.streak + "🔥";
+    }
+  }
+
+  function renderRound() {
+    window.scrollTo(0, 0);
+    renderHud();
+    el("clipLabel").textContent = "Clip " + state.roundNo + " of " + ROUNDS;
+    var tag = el("turnTag");
+    tag.hidden = state.players !== 2;
+    tag.textContent = "Player " + (currentPlayer() + 1) + "'s turn";
+
+    var t = el("transcript");
+    t.textContent = state.round.phrase;
+    t.lang = state.round.accent.tag;
+    t.hidden = true;
+    el("wordsBtn").setAttribute("aria-expanded", "false");
+    el("wordsBtn").textContent = "Show the words";
+
+    var box = el("options");
+    box.innerHTML = "";
+    state.round.options.forEach(function (opt, i) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "opt";
+      b.innerHTML = '<span class="flag" aria-hidden="true"></span>' +
+                    '<span class="name"></span>' +
+                    '<span class="key mono">' + (i + 1) + '</span>';
+      b.querySelector(".flag").textContent = opt.flag;
+      b.querySelector(".name").textContent = opt.name;
+      b.addEventListener("click", function () { answer(opt, b); });
+      box.appendChild(b);
+    });
+
+    el("reveal").hidden = true;
+    el("playHint").textContent = "Keys: 1–4 to answer · R to replay · Enter for the next clip.";
+    state.round.shownAt = now();
+    resetClock();
+    speak();
+  }
+
+  function answer(choice, button) {
+    if (state.answered) return;
+    state.answered = true;
+    stopClock();
+    var r0 = state.round;
+    var timedOut = !choice;
+    var took = (timedOut ? r0.deadline : now()) - (r0.heardAt || r0.shownAt);
+    var correct = !timedOut && choice.tag === r0.accent.tag;
+    var who = currentPlayer();
+    state.times[who] += took;
+    if (correct) {
+      state.scores[who]++;
+      state.streak++;
+      state.bestStreak = Math.max(state.bestStreak, state.streak);
+    } else {
+      state.streak = 0;
+    }
+    state.history.push({
+      accent: state.round.accent, guess: choice, ok: correct, player: who, ms: took
+    });
+
+    Array.prototype.forEach.call(el("options").children, function (node, i) {
+      var opt = state.round.options[i];
+      node.disabled = true;
+      if (opt.tag === state.round.accent.tag) node.dataset.state = "right";
+      else if (node === button) node.dataset.state = "wrong";
+      else node.dataset.state = "dim";
+    });
+
+    var r = el("reveal");
+    r.dataset.result = correct ? "right" : "wrong";
+    el("verdict").textContent = correct
+      ? (state.streak >= 3 ? "Correct — " + state.streak + " in a row!" : "Correct!")
+      : timedOut ? "Time's up!" : "Not this time — you said " + choice.name + ".";
+    el("took").textContent = timedOut ? "No answer in " + TIME_LIMIT + " seconds." : "Answered in " + fmtSecs(took) + ".";
+    el("clock").hidden = true;
+    el("revealFlag").textContent = state.round.accent.flag;
+    el("revealName").textContent = state.round.accent.name;
+    el("revealFact").textContent = state.round.accent.fact;
+    r.hidden = false;
+    el("nextBtn").textContent = state.roundNo >= ROUNDS ? "See the results" : "Next clip";
+    renderHud();
+    say((correct ? "Correct. " : timedOut ? "Time's up. " : "Wrong. ") + "It was " + state.round.accent.name + ".");
+    el("nextBtn").focus({ preventScroll: true });
+    // On a phone the reveal sits below the answers; bring it (and the Next button) on screen.
+    r.scrollIntoView({ block: "nearest" });
+  }
+
+  function nextRound() {
+    if (state.roundNo >= ROUNDS) return finish();
+    state.roundNo++;
+    buildRound();
+    renderRound();
+  }
+
+  var GRADES = [
+    { min: 10, label: "Golden ear", blurb: "A perfect run. Nobody sneaks an accent past you." },
+    { min: 8, label: "Sharp ear", blurb: "You are hearing the small stuff — vowels, r's, rhythm." },
+    { min: 6, label: "Getting good", blurb: "More than half. Try Tricky mode and see what happens." },
+    { min: 4, label: "Warming up", blurb: "The neighbours are the hard part. Listen to the vowels first." },
+    { min: 0, label: "Fresh ears", blurb: "Everyone starts here. Play the clip twice before you choose." }
+  ];
+
+  function finish() {
+    show("screenEnd");
+    var solo = state.players === 1;
+    el("versus").hidden = solo;
+    if (solo) {
+      var s = state.scores[0];
+      var g = GRADES.find(function (x) { return s >= x.min; });
+      el("grade").textContent = g.label;
+      el("finalTally").innerHTML = s + ' <small>/ ' + ROUNDS + '</small>';
+      el("finalBlurb").textContent = g.blurb + (state.bestStreak >= 3 ? " Best streak: " + state.bestStreak + " in a row." : "") +
+        " Total time " + fmtTotal(state.times[0]) + " (" + fmtSecs(state.times[0] / ROUNDS) + " a clip).";
+      var key = "best:" + state.mode + ":" + state.diff;
+      var best = store(key) || 0;
+      if (s > best) { store(key, s); best = s; }
+      el("bestChip").hidden = false;
+      el("bestScore").textContent = best + " / " + ROUNDS;
+    } else {
+      var a = state.scores[0], bScore = state.scores[1];
+      var tA = state.times[0], tB = state.times[1];
+      // Same score: the faster ear wins. Only a dead heat if the times match to the tenth.
+      var winner = a !== bScore ? (a > bScore ? 0 : 1)
+                 : Math.round(tA / 100) !== Math.round(tB / 100) ? (tA < tB ? 0 : 1) : -1;
+      el("grade").textContent = winner < 0 ? "Dead heat" : "Player " + (winner + 1) + " wins";
+      el("finalTally").textContent = a + " – " + bScore;
+      el("finalBlurb").textContent = a !== bScore
+        ? "Won by " + Math.abs(a - bScore) + " clip" + (Math.abs(a - bScore) === 1 ? "" : "s") + "."
+        : winner < 0 ? "Same hits, same time. Rematch?"
+        : "Same hits each — Player " + (winner + 1) + " was faster by " + fmtSecs(Math.abs(tA - tB)) + ".";
+      el("scoreA").textContent = a;
+      el("scoreB").textContent = bScore;
+      el("scoreA").title = "Total time " + fmtTotal(tA);
+      el("scoreB").title = "Total time " + fmtTotal(tB);
+      el("timeA").textContent = fmtTotal(tA);
+      el("timeB").textContent = fmtTotal(tB);
+      el("sideA").dataset.win = String(winner === 0);
+      el("sideB").dataset.win = String(winner === 1);
+    }
+
+    var list = el("recap");
+    list.innerHTML = "";
+    state.history.forEach(function (h, i) {
+      var li = document.createElement("li");
+      li.dataset.ok = String(h.ok);
+      li.innerHTML = '<span class="flag" aria-hidden="true"></span><span class="who"></span>' +
+                     '<span class="miss"></span><span class="mark"></span><span class="time"></span>';
+      li.querySelector(".flag").textContent = h.accent.flag;
+      li.querySelector(".who").textContent = h.accent.name;
+      li.querySelector(".miss").textContent = h.ok ? "" : h.guess ? "you said " + h.guess.name : "time ran out";
+      li.querySelector(".time").textContent = fmtSecs(h.ms);
+      li.querySelector(".mark").textContent = h.ok ? "✓" : "✗";
+      list.appendChild(li);
+    });
+    stopClock();
+    stopSound();
+    setPlaying(false);
+  }
+
+  function startGame() {
+    if (!pool().length) return;
+    state.roundNo = 0;
+    state.scores = [0, 0];
+    state.times = [0, 0];
+    state.streak = 0;
+    state.bestStreak = 0;
+    state.used = [];
+    state.history = [];
+    show("screenPlay");
+    sizeCanvas();
+    nextRound();
+  }
+
+  /* ---------------- start-screen wiring ---------------- */
+  var SEGMENTS = [
+    { id: "engineSeg", key: "engine", attr: "engine", cast: String },
+    { id: "modeSeg", key: "mode", attr: "mode", cast: String },
+    { id: "diffSeg", key: "diff", attr: "diff", cast: String },
+    { id: "timerSeg", key: "timer", attr: "timer", cast: String },
+    { id: "playersSeg", key: "players", attr: "players", cast: Number }
+  ];
+
+  function syncSegments() {
+    SEGMENTS.forEach(function (seg) {
+      Array.prototype.forEach.call(el(seg.id).querySelectorAll("button"), function (b) {
+        b.setAttribute("aria-pressed", String(seg.cast(b.dataset[seg.attr]) === state[seg.key]));
+      });
+    });
+  }
+
+  SEGMENTS.forEach(function (seg) {
+    el(seg.id).addEventListener("click", function (e) {
+      var btn = e.target.closest("button");
+      if (!btn) return;
+      state[seg.key] = seg.cast(btn.dataset[seg.attr]);
+      store(seg.key, state[seg.key]);
+      syncSegments();
+      refreshStart();
+    });
+  });
+
+  function refreshStart() {
+    var n = pool().length;
+    var best = store("best:" + state.mode + ":" + state.diff) || 0;
+    el("bestChip").hidden = !best;
+    el("bestScore").textContent = best + " / " + ROUNDS;
+
+    var onDevice = state.engine === "device";
+    el("lede").textContent = "You get a few seconds of a voice — one sentence, no clues. Pick the accent it came from. " + (onDevice
+      ? "Your device's own speech voices do the talking, so every device has a slightly different cast."
+      : "Chatterbox voices do the talking, modelled on real speakers from each place.");
+    el("footNote").textContent = onDevice
+      ? "Voices come from your browser's speech engine — nothing is recorded, and no audio is sent anywhere."
+      : "Chatterbox voices are modelled on speakers from the VCTK (CC BY 4.0) and EdAcc (CC BY-SA 4.0) corpora, CSTR, University of Edinburgh.";
+    var where = onDevice ? " on this device" : " recorded";
+    el("modeEnglishCount").textContent = poolFor(state.engine, "english").length + " accents" + where;
+    el("modeWorldCount").textContent = poolFor(state.engine, "world").length + " languages" + where;
+    var cbCount = poolFor("chatterbox", "english").length + poolFor("chatterbox", "world").length;
+    el("engineChatterboxNote").textContent = cbCount ? "AI voices from real speakers" : "No clips generated yet";
+
+    var ok = n >= 4;
+    el("startBtn").disabled = !ok;
+    var warn = el("setupWarn");
+    if (!onDevice) {
+      if (ok) {
+        warn.hidden = true;
+        el("readyNote").textContent = n + " accents ready — pre-recorded with Chatterbox, so they sound the same on every device.";
+      } else {
+        el("readyNote").textContent = "";
+        warn.hidden = false;
+        warn.innerHTML = "<p><strong>Only " + n + " Chatterbox clip set" + (n === 1 ? "" : "s") +
+          " for this pack</strong> — the game needs at least 4. Switch to <em>This device</em>, or generate more with <code>tools/voicegen</code>.</p>";
+      }
+      return;
+    }
+    if (!SUPPORTED) {
+      el("readyNote").textContent = "";
+      warn.hidden = false;
+      warn.innerHTML = "<p><strong>This browser has no speech voices.</strong> The game needs the Web Speech API. Try Chrome, Edge or Safari.</p>";
+      el("startBtn").disabled = true;
+      return;
+    }
+    if (ok) {
+      warn.hidden = true;
+      el("readyNote").textContent = n + " accents ready — you need 4 to play, and more accents means a harder game.";
+    } else {
+      el("readyNote").textContent = "";
+      warn.hidden = false;
+      warn.innerHTML =
+        "<p><strong>Only " + n + " voice" + (n === 1 ? "" : "s") + " found for this pack</strong> — the game needs at least 4. " +
+        (state.mode === "english" && packs.world.length >= 4 ? "World tour has " + packs.world.length + " ready right now, or add voices:" : "To add more:") + "</p>" +
+        "<ul>" +
+        "<li><strong>Chrome / Edge on a computer:</strong> stay online — extra voices stream from the internet, so reload once you have a connection.</li>" +
+        "<li><strong>Android:</strong> Settings → System → Languages → Text-to-speech → install more voices for Google Speech Services.</li>" +
+        "<li><strong>iPhone / iPad:</strong> Settings → Accessibility → Spoken Content → Voices → add languages.</li>" +
+        "<li><strong>Windows:</strong> Settings → Time & language → Speech → Manage voices → Add voices.</li>" +
+        "</ul>";
+    }
+  }
+
+  el("startBtn").addEventListener("click", startGame);
+  el("playBtn").addEventListener("click", function () { speak(); });
+  el("slowBtn").addEventListener("click", function () { speak(0.62); });
+  el("hearAgainBtn").addEventListener("click", function () { speak(); });
+  el("nextBtn").addEventListener("click", nextRound);
+  el("againBtn").addEventListener("click", startGame);
+  el("settingsBtn").addEventListener("click", function () {
+    show("screenStart");
+    refreshStart();
+  });
+  el("wordsBtn").addEventListener("click", function () {
+    var t = el("transcript");
+    t.hidden = !t.hidden;
+    this.setAttribute("aria-expanded", String(!t.hidden));
+    this.textContent = t.hidden ? "Show the words" : "Hide the words";
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (el("screenPlay").hidden) return;
+    if (e.target && /^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+    if (e.key >= "1" && e.key <= "4") {
+      var node = el("options").children[Number(e.key) - 1];
+      if (node && !node.disabled) { e.preventDefault(); node.click(); }
+    } else if (e.key === "r" || e.key === "R") {
+      e.preventDefault(); speak();
+    } else if (e.key === "Enter" && state.answered) {
+      e.preventDefault(); nextRound();
+    }
+  });
+
+  /* ---------------- boot ---------------- */
+  function boot() {
+    syncSegments();
+    sizeCanvas();
+    waitForVoices().then(function () {
+      refreshStart();
+      if (!pool().length && packs.world.length >= 4) {
+        state.mode = "world";
+        store("mode", "world");
+        syncSegments();
+        refreshStart();
+      }
+    });
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+.DS_Store
+.claude/
+tools/voicegen/.venv/
+tools/voicegen/*.log
+__pycache__/

@@ -15,7 +15,9 @@ taking turns.
 
 ## Playing it
 
-Open `index.html` in a browser. That is the whole game — one file, no build
+**Play online: https://yghub1.github.io/guess-the-accent/** — works on phones too.
+
+Or open `index.html` in a browser. That is the whole game — one file, no build
 step, no server, no dependencies.
 
 To put it online, push to GitHub and turn on Pages (Settings → Pages → Source:
